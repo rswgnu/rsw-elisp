@@ -1,4 +1,4 @@
-;;; rsw-elisp.el --- Interactively evaluate regions, preceding variable definitions and quoted sexpressions
+;;; rsw-elisp.el --- Interactively eval regions, var defs, quoted sexps
 ;;
 ;; Author:           Robert Weiner <rsw at gnu dot org>
 ;; Maintainer:       Robert Weiner <rsw at gnu dot org>
@@ -515,3 +515,5 @@ Typically, one would bind this to {M-y} in the minibuffer only."
     (yank-pop arg)))
 
 (provide 'rsw-elisp)
+
+;;; rsw-elisp.el ends here
