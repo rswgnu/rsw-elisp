@@ -1,5 +1,4 @@
-# rsw-elisp
-Interactively evaluate regions, preceding variable definitions and quoted sexpressions
+# rsw-elisp - Interactively evaluate regions, preceding variable definitions and quoted sexpressions
 
 This code improves and replaces the GNU Emacs commands that
 interactively evaluate Emacs Lisp expressions.  The new commands
@@ -24,15 +23,26 @@ To return to the standard key bindings, use:
 
     M-x rsw-elisp-disable RET
 
+To toggle this on and off, use:
+
+    M-x rsw-elisp-toggle RET
+
+Programmatically, to see whether it is enabled or not, use:
+
+    (rsw-elisp-p)
+
+----
+
 The commands and key bindings herein provide 5 new features for
 interactive Emacs Lisp evaluation:
 
-  1.  **Evaluating Quoted Expressions**: *C-x C-e* (`eval-last-expression`) on
-      a regularly quoted sexpression doesn't show you anything
-      different than what you see on screen already.  You really want
-      to see the value of the unquoted sexpression and now you can.
-      *C-x C-e* (`rsw-elisp-eval-last-expression`) and
-      *M-:* (`rsw-elisp-eval-expression`) remove any regular outer quotes
+  1.  **Evaluating Quoted Expressions**: *C-x C-e*
+      (`eval-last-expression`) on a regularly quoted sexpression
+      doesn't show you anything different than what you see on screen
+      already.  You really want to see the value of the unquoted
+      sexpression and now you can.  *C-x C-e*
+      (`rsw-elisp-eval-last-expression`) and *M-:*
+      (`rsw-elisp-eval-expression`) remove any regular outer quotes
       from sexpressions and show you the value.  For example,
       `'emacs-version` interactively yields "26.0.50".
 
@@ -53,10 +63,10 @@ interactive Emacs Lisp evaluation:
       `eval-last-expression` with point after a previously defined
       variable definition does not reset its value in Emacs, though
       clearly the only reason to do this is to redefine the variable.
-      Although `eval-defun` does do this, there is no reason to have to
-      use a different key binding than you would to interactively
+      Although `eval-defun` does do this, there is no reason to have
+      to use a different key binding than you would to interactively
       evaluate other expressions.  *C-x C-e*
-      (`rsw-elisp-eval-last-expression`) resolves this. 
+      (`rsw-elisp-eval-last-expression`) resolves this.
 
   4.  **Default Expressions to Evaluate**: When using *M-:* bound
       to (`rsw-elisp-eval-expression`), if a region
@@ -68,13 +78,12 @@ interactive Emacs Lisp evaluation:
 
   5.  **Editing Default Expressions**: If you ever want to edit the
       default, use *M-y* (`rsw-elisp-yank-pop`) to yank it into the
-      editable portion of the minibuffer, any time other than
-      after a `yank` command.  (*M-y* still performs its normal
-      `yank-pop` function as a *C-y* `yank`).  If you yank a
-      large expression in by mistake, press *C-d* or *DELETE FORWARD*
-      when at the end of the minibuffer to erase its entire
-      contents.  If you prefer these helper keys not be bound,
-      after the call to:
+      editable portion of the minibuffer, any time other than after a
+      `yank` command.  (*M-y* still performs its normal `yank-pop`
+      function after a *C-y* `yank` command).  If you yank in a large
+      expression by mistake, press *C-d* or *DELETE FORWARD* when
+      at the end of the minibuffer to erase its entire contents.  If
+      you prefer these helper keys not be bound, after the call to:
 
          ```
 		 (rsw-elisp-enable)

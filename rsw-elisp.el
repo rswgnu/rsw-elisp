@@ -4,7 +4,7 @@
 ;; Maintainer:       Robert Weiner <rsw at gnu dot org>
 ;; Created:          20-Dec-17 at 15:44:48
 ;; Released:         23-Dec-17
-;; Version:          1.0.2
+;; Version:          1.0.3
 ;; Keywords:         languages, tools
 ;; Package:          rsw-elisp
 ;; Package-Requires: ((emacs "24.4.0"))
@@ -54,16 +54,24 @@
 ;;   To return to the standard key bindings, use:
 ;;
 ;;     M-x rsw-elisp-disable RET
+;;
+;;   To toggle this on and off, use:
+;;
+;;     M-x rsw-elisp-toggle RET
+;;
+;;   Programmatically, to see whether it is enabled or not, use:
+;;
+;;     (rsw-elisp-p)
 
 ;;   The commands and key bindings herein provide 5 new features for
 ;;   interactive Emacs Lisp evaluation:
 ;;
-;;     1.  Evaluating Quoted Expressions: C-x C-e (eval-last-expression) on
-;;         a regularly quoted sexpression doesn't show you anything
+;;     1.  Evaluating Quoted Expressions: C-x C-e `eval-last-expression'
+;;         on a regularly quoted sexpression doesn't show you anything
 ;;         different than what you see on screen already.  You really want
 ;;         to see the value of the unquoted sexpression and now you can.
-;;         C-x C-e (rsw-elisp-eval-last-expression) and
-;;         M-: (rsw-elisp-eval-expression) remove any regular outer quotes
+;;         C-x C-e `rsw-elisp-eval-last-expression' and M-:
+;;         `rsw-elisp-eval-expression' remove any regular outer quotes
 ;;         from sexpressions and show you the value.  For example,
 ;;         'emacs-version interactively yields "26.0.50".
 ;;
@@ -87,10 +95,10 @@
 ;;         Although `eval-defun' does do this, there is no reason to have to
 ;;         use a different key binding than you would to interactively
 ;;         evaluate other expressions.  C-x
-;;         C-e (rsw-elisp-eval-last-expression) resolves this.
+;;         C-e `rsw-elisp-eval-last-expression' resolves this.
 ;;
 ;;     4.  Default Expressions to Evaluate: When using M-: bound
-;;         to (rsw-elisp-eval-expression), if a region
+;;         to `rsw-elisp-eval-expression', if a region
 ;;         is active, the leading expression in the region is used as the
 ;;         default expression to evaluate and included in the prompt.
 ;;         Otherwise, if called with point in an Emacs Lisp mode listed in
@@ -98,16 +106,18 @@
 ;;         expression around point is used as the default.
 ;;
 ;;     5.  Editing Default Expressions: If you ever want to edit the
-;;         default, use M-y (rsw-elisp-yank-pop) to yank it into the
-;;         editable portion of the minibuffer, any time other than
-;;         after a yank command.  (M-y still performs its normal
-;;         yank-pop function as well after a C-y yank).  If you yank a
-;;         large expression in by mistake, press C-d or DELETE FORWARD
-;;         when at the end of the minibuffer to erase its entire
-;;         contents.  If you prefer these helper keys not be bound,
-;;         after the call to:
+;;         default, use M-y `rsw-elisp-yank-pop; to yank it into the
+;;         editable portion of the minibuffer, any time other than after a
+;;         yank command.  (M-y still performs its normal `yank-pop'
+;;         function as well after a C-y `yank').  If you yank in a large
+;;         expression by mistake, press C-d or DELETE FORWARD when at
+;;         the end of the minibuffer to erase its entire contents.  If you
+;;         prefer these helper keys not be bound, after the call to:
+;;
 ;;           (rsw-elisp-enable)
+;;
 ;;         add:
+;;
 ;;           (setq rsw-elisp-helper-keys nil)
 
 ;;; Code:
@@ -228,22 +238,24 @@ STREAM or the value of `standard-input' may be:
       (read stream)
     (error nil)))
 
-(defun rsw-elisp-eval (exp interactive-flag)
-  "Same as `eval' but if EXP is not boundp but is fboundp, return its symbol value.
-Otherwise, just return the value of evaluating EXP.
+(defun rsw-elisp-eval (expr interactive-flag)
+  "Same as `eval' but if EXPR is not boundp and is fboundp and INTERACTIVE-FLAG is non-nil, return EXPR's symbol function.
+Otherwise, just return EXPR's value.  With INTERACTIVE-FLAG non-nil,
+remove any regular quotes before evaluation. 
 
 If `lexical-binding' is t, evaluate using lexical scoping.
 `lexical-binding' can also be an actual lexical environment, in the
 form of an alist mapping symbols to their value."
   (if interactive-flag
-      (setq exp (rsw-elisp-unquote-sexp exp)))
-  (if (eq (type-of exp) 'symbol)
-      (cond ((fboundp exp)
-	     `,(symbol-function exp))
-	    ((boundp exp)
-	     `,(symbol-value exp))
-	    (t (eval exp lexical-binding)))
-    (eval exp lexical-binding)))
+      (progn (setq expr (rsw-elisp-unquote-sexp expr))
+	     (if (eq (type-of expr) 'symbol)
+		 (cond ((boundp expr)
+			`,(symbol-value expr))
+		       ((fboundp expr)
+			`,(symbol-function expr))
+		       (t (eval expr lexical-binding)))
+	       (eval expr lexical-binding)))
+    (eval expr lexical-binding)))
 
 (defun rsw-elisp-delete-char (n &optional killflag)
   "Like `delete-char' but if in the minibuffer and at end of buffer, delete contents.
