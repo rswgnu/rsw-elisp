@@ -3,8 +3,8 @@
 ;; Author:           Robert Weiner <rsw at gnu dot org>
 ;; Maintainer:       Robert Weiner <rsw at gnu dot org>
 ;; Created:          20-Dec-17 at 15:44:48
-;; Released:         22-Dec-17
-;; Version:          1.0.1
+;; Released:         23-Dec-17
+;; Version:          1.0.2
 ;; Keywords:         languages, tools
 ;; Package:          rsw-elisp
 ;; Package-Requires: ((emacs "24.4.0"))
@@ -121,6 +121,10 @@
 \\[delete-char] at the end of the minibuffer deletes its entire contents.
 \\[yank-pop] when not after a yank, inserts the default expression for editing.")
 
+(defun rsw-elisp-p ()
+  "Return non-nil if `rsw-elisp' interactive Emacs Lisp evaluation commands are enabled."
+  (eq (key-binding (kbd "M-:")) #'rsw-elisp-eval-expression))
+
 ;;;###autoload
 (defun rsw-elisp-enable ()
   "Enable improvements to interactive Emacs Lisp evaluation commands."
@@ -154,7 +158,10 @@
     ;; if not preceded by a yank command, insert the default into the
     ;; editable minibuffer contents, as if from the kill ring.
     ;; M-y
-    (define-key minibuffer-local-map [remap yank-pop] 'rsw-elisp-yank-pop)))
+    (define-key minibuffer-local-map [remap yank-pop] 'rsw-elisp-yank-pop))
+  ;;
+  (if (called-interactively-p)
+      (message "rsw-elisp enabled; using improved Emacs Lisp evaluation commands")))
 
 (defun rsw-elisp-disable ()
   "Disable improvements to interactive Emacs Lisp evaluation commands."
@@ -176,7 +183,18 @@
   ;;
   ;; M-y, yank-pop the initial expression into the minibuffer at any time, as if
   ;; from the kill ring.
-  (define-key minibuffer-local-map [remap yank-pop] nil))
+  (define-key minibuffer-local-map [remap yank-pop] nil)
+  ;;
+  (if (called-interactively-p)
+      (message "rsw-elisp disabled; using standard Emacs Lisp evaluation commands")))
+
+;;;###autoload
+(defun rsw-elisp-toggle ()
+  "Toggle improvements to interactive Emacs Lisp evaluation commands on and off."
+  (interactive)
+  (if (rsw-elisp-p)
+      (call-interactively #'rsw-elisp-disable)
+    (call-interactively #'rsw-elisp-enable)))
 
 ;;; ************************************************************************
 ;;; Private variables
@@ -217,13 +235,14 @@ Otherwise, just return the value of evaluating EXP.
 If `lexical-binding' is t, evaluate using lexical scoping.
 `lexical-binding' can also be an actual lexical environment, in the
 form of an alist mapping symbols to their value."
-  (when (eq (type-of exp) 'symbol)
-     (cond ((fboundp exp)
-	    (setq exp `,(symbol-function exp)))
-	   ((boundp exp)
-	    (setq exp `,(symbol-value exp)))))
-  (eval (if interactive-flag (rsw-elisp-unquote-sexp exp) exp)
-	lexical-binding))
+  (if (eq (type-of exp) 'symbol)
+      (cond ((fboundp exp)
+	     `,(symbol-function exp))
+	    ((boundp exp)
+	     `,(symbol-value exp))
+	    (t (eval exp lexical-binding)))
+    (eval (if interactive-flag (rsw-elisp-unquote-sexp exp) exp)
+	  lexical-binding)))
 
 (defun rsw-elisp-delete-char (n &optional killflag)
   "Like `delete-char' but if in the minibuffer and at end of buffer, delete contents.
