@@ -39,8 +39,8 @@ interactive Emacs Lisp evaluation:
       This is for programmers who already understand how quoting
       works and don't need to see the same expression fed back to
       them.  For times where you really need to see the quoted
-      form, use a backquote ` or a backquote followed by a
-      regular quote '.
+      form, use a backquote \` or a backquote followed by a
+      regular quote \'.
 
   2.  **Evaluating Function Symbols**: When interactively evaluating a
       symbol, Emacs returns only the symbol's value, giving an unbound
@@ -76,9 +76,13 @@ interactive Emacs Lisp evaluation:
       contents.  If you prefer these helper keys not be bound,
       after the call to:
 
-         ```(rsw-elisp-enable)```
+         ```
+		 (rsw-elisp-enable)
+		 ```
 
       add:
 
-         ```(setq rsw-elisp-helper-keys nil)```
+         ```
+		 (setq rsw-elisp-helper-keys nil)
+		 ```
 
