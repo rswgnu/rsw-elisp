@@ -3,7 +3,7 @@
 ;; Author:           Robert Weiner <rsw at gnu dot org>
 ;; Maintainer:       Robert Weiner <rsw at gnu dot org>
 ;; Created:          20-Dec-17 at 15:44:48
-;; Released:         21-Dec-17
+;; Released:         22-Dec-17
 ;; Version:          1.0.1
 ;; Keywords:         languages, tools
 ;; Package:          rsw-elisp
@@ -94,7 +94,7 @@
 ;;         is active, the leading expression in the region is used as the
 ;;         default expression to evaluate and included in the prompt.
 ;;         Otherwise, if called with point in an Emacs Lisp mode listed in
-;;         `rsw-elisp-modes' and not on a whitespace charater, then the
+;;         `rsw-elisp-modes' and not on a whitespace character, then the
 ;;         expression around point is used as the default.
 ;;
 ;;     5.  Editing Default Expressions: If you ever want to edit the
