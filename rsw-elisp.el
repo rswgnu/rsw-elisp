@@ -235,14 +235,15 @@ Otherwise, just return the value of evaluating EXP.
 If `lexical-binding' is t, evaluate using lexical scoping.
 `lexical-binding' can also be an actual lexical environment, in the
 form of an alist mapping symbols to their value."
+  (if interactive-flag
+      (setq exp (rsw-elisp-unquote-sexp exp)))
   (if (eq (type-of exp) 'symbol)
       (cond ((fboundp exp)
 	     `,(symbol-function exp))
 	    ((boundp exp)
 	     `,(symbol-value exp))
 	    (t (eval exp lexical-binding)))
-    (eval (if interactive-flag (rsw-elisp-unquote-sexp exp) exp)
-	  lexical-binding)))
+    (eval exp lexical-binding)))
 
 (defun rsw-elisp-delete-char (n &optional killflag)
   "Like `delete-char' but if in the minibuffer and at end of buffer, delete contents.
