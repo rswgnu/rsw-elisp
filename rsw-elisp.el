@@ -4,7 +4,7 @@
 ;; Maintainer:       Robert Weiner <rsw at gnu dot org>
 ;; Created:          20-Dec-17 at 15:44:48
 ;; Released:         23-Dec-17
-;; Version:          1.0.3
+;; Version:          1.0.4
 ;; Keywords:         languages, tools
 ;; Package:          rsw-elisp
 ;; Package-Requires: ((emacs "24.4.0"))
@@ -159,7 +159,7 @@
     ;; replaced with another.
     ;;
     ;; C-d and <deletechar>, forward delete char, in the minibuffer
-    (define-key minibuffer-local-map [remap delete-char] 'rsw-elisp-delete-char)
+    (define-key minibuffer-local-map [remap delete-char] 'rsw-elisp-delete-forward-char)
     (define-key minibuffer-local-map [remap delete-forward-char] 'rsw-elisp-delete-forward-char)
     ;;
     ;; Any default expression pulled from the current buffer by M-: is
@@ -207,13 +207,6 @@
     (call-interactively #'rsw-elisp-enable)))
 
 ;;; ************************************************************************
-;;; Private variables
-;;; ************************************************************************
-
-(defvar rsw-elisp--default nil
-  "The value of the initial expression inserted during `rsw-elisp-eval-expression'.")
-
-;;; ************************************************************************
 ;;; Public variables
 ;;; ************************************************************************
 
@@ -257,41 +250,11 @@ form of an alist mapping symbols to their value."
 	       (eval expr lexical-binding)))
     (eval expr lexical-binding)))
 
-(defun rsw-elisp-delete-char (n &optional killflag)
-  "Like `delete-char' but if in the minibuffer and at end of buffer, delete contents.
-Use undo to get the contents back, if necessary."
-  (interactive "p\nP")
-  (if (and (minibufferp) (eobp))
-      (delete-region (minibuffer-prompt-end) (point-max))
-    (delete-char n killflag)))
-
-(defun rsw-elisp-delete-forward-char (n &optional killflag)
-  "Delete the following N characters (previous if N is negative).
-If Transient Mark mode is enabled, the mark is active, and N is 1,
-delete the text in the region and deactivate the mark instead.
-To disable this, set variable `delete-active-region' to nil.
-
-Optional second arg KILLFLAG non-nil means to kill (save in kill
-ring) instead of delete.  Interactively, N is the prefix arg, and
-KILLFLAG is set if N was explicitly specified.
-
-When killing, the killed text is filtered by
-`filter-buffer-substring' before it is saved in the kill ring, so
-the actual saved text might be different from what was killed."
-  (declare (interactive-only delete-char))
-  (interactive "p\nP")
-  (unless (integerp n)
-    (signal 'wrong-type-argument (list 'integerp n)))
-  (if (and (minibufferp) (eobp))
-      (delete-region (minibuffer-prompt-end) (point-max))
-    ;; Otherwise, do simple forward deletion.
-    (delete-forward-char n killflag)))
-
-(defun rsw-elisp-unquote-sexp (exp)
+(defun rsw-elisp-unquote-sexp (expr)
   "Remove Elisp quote prefixes; leave backquote and function # quote."
-    (while (and (consp exp) (memq (car exp) '(quote)))
-      (setq exp (cadr exp)))
-    exp)
+    (while (and (consp expr) (memq (car expr) '(quote)))
+      (setq expr (cadr expr)))
+    expr)
 
 (defun rsw-elisp-get-thing-at-point ()
   "If in an `rsw-elisp-modes' major mode and not over whitespace, return the Lisp form around point as a string.
@@ -380,71 +343,70 @@ if the expression is a constant or variable definition, its value is redefined."
 ;;; ************************************************************************
 
 ;;;###autoload
-(defun rsw-elisp-eval-expression (exp &optional insert-value no-truncate char-print-limit)
+(defun rsw-elisp-eval-expression (expr &optional insert-value no-truncate char-print-limit)
   "Same as `eval-expression' but when called interactively, uses sexp near point as a default.
 If the region is active, use the first sexp from there.  Otherwise, if not on a
 whitespace character and in one of the `rsw-elisp-modes' major modes,
 then remove any regular quoting (not backquoting) from the sexp around point
 and use that as the default."
   (interactive
-   (progn (setq exp (cond ((use-region-p)
-			   (buffer-substring-no-properties
-			    (region-beginning) (region-end)))
-			  ((memq major-mode rsw-elisp-modes)
-			   (rsw-elisp-get-thing-at-point)))
-		;; Convert string to an sexpression
-		exp (and exp (not (equal exp "")) (rsw-elisp-read exp))
-		exp (if (not noninteractive)
-			(rsw-elisp-unquote-sexp exp)
-		      exp)
-		rsw-elisp--default (if (and exp (not (stringp exp)))
-				       (prin1-to-string exp)
-				     exp))
-	  (let ((result (rsw-elisp-read-expression
-			 (if (and exp (not (equal exp "")))
-			     (format "Eval (default %s): " exp)
-			   "Eval: "))))
-	    (if (and result (not (equal result "")))
-		(setq exp result)))
-	  (setq rsw-elisp--default (if (and exp (not (stringp exp)))
-				       (prin1-to-string exp)
-				     exp)
-		exp (if (and (equal exp "")
-			     rsw-elisp--default
-			     (not (equal rsw-elisp--default "")))
-			(rsw-elisp-read rsw-elisp--default)
-		      exp))
-	  (cons exp (eval-expression-get-print-arguments current-prefix-arg))))
-  (unwind-protect
-      (let ((interactive-flag (and (called-interactively-p 'any)
-				   (not noninteractive))))
-	(setq rsw-elisp--default (if (and exp (not (stringp exp)))
-				     (prin1-to-string exp)
-				   exp))
-	(if (null eval-expression-debug-on-error)
-	    (push (rsw-elisp-eval exp interactive-flag) values)
-	  (let ((old-value (make-symbol "t")) new-value)
-	    ;; Bind debug-on-error to something unique so that we can
-	    ;; detect when evalled code changes it.
-	    (let ((debug-on-error old-value))
-	      (push (rsw-elisp-eval exp interactive-flag) values)
-	      (setq new-value debug-on-error))
-	    ;; If evalled code has changed the value of debug-on-error,
-	    ;; propagate that change to the global binding.
-	    (unless (eq old-value new-value)
-	      (setq debug-on-error new-value))))
+   (let (rsw-elisp--default)
+     (setq expr (cond ((use-region-p)
+		       (buffer-substring-no-properties
+			(region-beginning) (region-end)))
+		      ((memq major-mode rsw-elisp-modes)
+		       (rsw-elisp-get-thing-at-point)))
+	   ;; Convert string to an sexpression
+	   expr (and expr (not (equal expr "")) (rsw-elisp-read expr))
+	   expr (if (not noninteractive)
+		    (rsw-elisp-unquote-sexp expr)
+		  expr)
+	   rsw-elisp--default (if (and expr (not (stringp expr)))
+				  (prin1-to-string expr)
+				expr))
+     (let ((result (rsw-elisp-read-expression
+		    (if (and expr (not (equal expr "")))
+			(format "Eval (default %s): " expr)
+		      "Eval: "))))
+       (if (and result (not (equal result "")))
+	   (setq expr result)))
+     (setq rsw-elisp--default (if (and expr (not (stringp expr)))
+				  (prin1-to-string expr)
+				expr)
+	   expr (if (and (equal expr "")
+			 rsw-elisp--default
+			 (not (equal rsw-elisp--default "")))
+		    (rsw-elisp-read rsw-elisp--default)
+		  expr))
+     (cons expr (eval-expression-get-print-arguments current-prefix-arg))))
+  (let ((interactive-flag (and (called-interactively-p 'any)
+			       (not noninteractive)))
+	(rsw-elisp--default (if (and expr (not (stringp expr)))
+				(prin1-to-string expr)
+			      expr)))
+    (if (null eval-expression-debug-on-error)
+	(push (rsw-elisp-eval expr interactive-flag) values)
+      (let ((old-value (make-symbol "t")) new-value)
+	;; Bind debug-on-error to something unique so that we can
+	;; detect when evalled code changes it.
+	(let ((debug-on-error old-value))
+	  (push (rsw-elisp-eval expr interactive-flag) values)
+	  (setq new-value debug-on-error))
+	;; If evalled code has changed the value of debug-on-error,
+	;; propagate that change to the global binding.
+	(unless (eq old-value new-value)
+	  (setq debug-on-error new-value))))
 
-	     (let ((print-length (unless no-truncate eval-expression-print-length))
-		   (print-level  (unless no-truncate eval-expression-print-level))
-		   (eval-expression-print-maximum-character char-print-limit)
-		   (deactivate-mark))
-	       (let ((out (if insert-value (current-buffer) t)))
-		 (prog1
-		     (prin1 (car values) out)
-		   (let ((str (and char-print-limit
-				   (eval-expression-print-format (car values)))))
-		     (when str (princ str out)))))))
-    (setq rsw-elisp--default nil)))
+    (let ((print-length (unless no-truncate eval-expression-print-length))
+	  (print-level  (unless no-truncate eval-expression-print-level))
+	  (eval-expression-print-maximum-character char-print-limit)
+	  (deactivate-mark))
+      (let ((out (if insert-value (current-buffer) t)))
+	(prog1
+	    (prin1 (car values) out)
+	  (let ((str (and char-print-limit
+			  (eval-expression-print-format (car values)))))
+	    (when str (princ str out))))))))
 
 ;;;###autoload
 (defun rsw-elisp-eval-last-sexp (arg &optional interactive-flag)
@@ -538,6 +500,8 @@ this command arranges for all errors to enter the debugger."
 Typically, one would bind this to {M-y} in the minibuffer only."
   (interactive "*p")
   (if (and (not (eq last-command 'yank))
+	   ;; Called from rsw-elisp-eval-epression
+	   (boundp 'rsw-elisp--default)
 	   rsw-elisp--default (not (string-empty-p rsw-elisp--default)))
       (progn
 	(setq this-command 'yank)
@@ -545,6 +509,30 @@ Typically, one would bind this to {M-y} in the minibuffer only."
 	(set-marker (mark-marker) (point) (current-buffer))
 	(insert rsw-elisp--default))
     (yank-pop arg)))
+
+(defun rsw-elisp-delete-forward-char (n &optional killflag)
+  "Delete the following N characters (previous if N is negative).
+If Transient Mark mode is enabled, the mark is active, and N is 1,
+delete the text in the region and deactivate the mark instead.
+To disable this, set variable `delete-active-region' to nil.
+
+Optional second arg KILLFLAG non-nil means to kill (save in kill
+ring) instead of delete.  Interactively, N is the prefix arg, and
+KILLFLAG is set if N was explicitly specified.
+
+When killing, the killed text is filtered by
+`filter-buffer-substring' before it is saved in the kill ring, so
+the actual saved text might be different from what was killed."
+  (declare (interactive-only delete-char))
+  (interactive "p\nP")
+  (unless (integerp n)
+    (signal 'wrong-type-argument (list 'integerp n)))
+  (if (and (minibufferp) (eobp) (boundp 'rsw-elisp--default))
+      (if killflag
+	  (kill-region (minibuffer-prompt-end) (point-max))
+	(delete-region (minibuffer-prompt-end) (point-max)))
+    ;; Otherwise, do simple forward deletion.
+    (delete-forward-char n killflag)))
 
 (provide 'rsw-elisp)
 
