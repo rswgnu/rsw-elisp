@@ -3,8 +3,8 @@
 ;; Author:           Robert Weiner <rsw at gnu dot org>
 ;; Maintainer:       Robert Weiner <rsw at gnu dot org>
 ;; Created:          20-Dec-17 at 15:44:48
-;; Released:         23-Dec-17
-;; Version:          1.0.4
+;; Released:         26-Dec-17
+;; Version:          1.0.5
 ;; Keywords:         languages, tools
 ;; Package:          rsw-elisp
 ;; Package-Requires: ((emacs "24.4.0"))
@@ -280,6 +280,29 @@ Otherwise, return the empty string."
 	  (t (setq str (thing-at-point 'sexp))))
     (if str (string-trim str) "")))
 
+(unless (fboundp 'eval-expression-get-print-arguments)
+(defcustom eval-expression-print-maximum-character 127
+  "The largest integer that will be displayed as a character.
+This affects printing by `eval-expression' (via
+`eval-expression-print-format')."
+  :group 'lisp
+  :type 'integer
+  :version "26.1")
+
+(defun eval-expression-get-print-arguments (prefix-argument)
+  "Get arguments for commands that print an expression result.
+Returns a list (INSERT-VALUE NO-TRUNCATE CHAR-PRINT-LIMIT)
+based on PREFIX-ARG.  This function determines the interpretation
+of the prefix argument for `eval-expression' and
+`eval-last-sexp'."
+  (let ((num (prefix-numeric-value prefix-argument)))
+    (list (not (memq prefix-argument '(- nil)))
+          (= num 0)
+          (cond ((not (memq prefix-argument '(0 -1 - nil))) nil)
+                ((= num -1) most-positive-fixnum)
+                (t eval-expression-print-maximum-character)))))
+)
+
 (defun rsw-elisp-internal-eval-last-sexp (arg interactive-flag)
   "Same as `elisp--eval-last-sexp' but does not print to the minibuffer.
 Prefix ARG is followed by INTERACTIVE-FLAG, which if non-nil, calls
@@ -344,7 +367,7 @@ if the expression is a constant or variable definition, its value is redefined."
 
 ;;;###autoload
 (defun rsw-elisp-eval-expression (expr &optional insert-value no-truncate char-print-limit)
-  "Same as `eval-expression' but when called interactively, uses sexp near point as a default.
+  "Same as `eval-expression' but when called interactively, use sexp near point as a default.
 If the region is active, use the first sexp from there.  Otherwise, if not on a
 whitespace character and in one of the `rsw-elisp-modes' major modes,
 then remove any regular quoting (not backquoting) from the sexp around point
@@ -533,6 +556,18 @@ the actual saved text might be different from what was killed."
 	(delete-region (minibuffer-prompt-end) (point-max)))
     ;; Otherwise, do simple forward deletion.
     (delete-forward-char n killflag)))
+
+;; If eval-sexp-fu package is loaded, flash the evaluated sexp before point.
+(eval-after-load 'eval-sexp-fu
+  '(progn
+     (define-eval-sexp-fu-flash-command rsw-elisp-eval-last-sexp
+       (eval-sexp-fu-flash (when (ignore-errors (preceding-sexp))
+			     (with-esf-end-of-sexp
+			       (bounds-of-thing-at-point 'sexp)))))
+     (define-eval-sexp-fu-flash-command rsw-elisp-eval-print-last-sexp
+       (eval-sexp-fu-flash (when (ignore-errors (preceding-sexp))
+			     (with-esf-end-of-sexp
+			       (bounds-of-thing-at-point 'sexp)))))))
 
 (provide 'rsw-elisp)
 
