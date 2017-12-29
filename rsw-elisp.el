@@ -120,6 +120,11 @@
 ;;
 ;;           (setq rsw-elisp-helper-keys nil)
 
+;;   If the separate "eval-sexp-fu" package is installed and its minor
+;;   mode is enabled, the last-expression evaluation commands from
+;;   this package will also flash the last sexp before point when it
+;;   is interactively evaluated.
+
 ;;; Code:
 
 ;;; ************************************************************************
@@ -557,7 +562,8 @@ the actual saved text might be different from what was killed."
     ;; Otherwise, do simple forward deletion.
     (delete-forward-char n killflag)))
 
-;; If eval-sexp-fu package is loaded, flash the evaluated sexp before point.
+;; When the eval-sexp-fu package is loaded and enabled, flash the
+;; evaluated sexp before point.
 (eval-after-load 'eval-sexp-fu
   '(progn
      (define-eval-sexp-fu-flash-command rsw-elisp-eval-last-sexp

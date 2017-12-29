@@ -36,12 +36,12 @@ Programmatically, to see whether it is enabled or not, use:
 The commands and key bindings herein provide 5 new features for
 interactive Emacs Lisp evaluation:
 
-  1.  **Evaluating Quoted Expressions**: *C-x C-e*
+  1.  **Evaluating Quoted Expressions**: <kbd>C-x C-e</kbd>
       (`eval-last-expression`) on a regularly quoted sexpression
       doesn't show you anything different than what you see on screen
       already.  You really want to see the value of the unquoted
-      sexpression and now you can.  *C-x C-e*
-      (`rsw-elisp-eval-last-expression`) and *M-:*
+      sexpression and now you can.  <kbd>C-x C-e</kbd>
+      (`rsw-elisp-eval-last-expression`) and <kbd>M-:</kbd>
       (`rsw-elisp-eval-expression`) remove any regular outer quotes
       from sexpressions and show you the value.  For example,
       `'emacs-version` interactively yields "26.0.50".
@@ -65,10 +65,10 @@ interactive Emacs Lisp evaluation:
       clearly the only reason to do this is to redefine the variable.
       Although `eval-defun` does do this, there is no reason to have
       to use a different key binding than you would to interactively
-      evaluate other expressions.  *C-x C-e*
+      evaluate other expressions.  <kbd>C-x C-e</kbd>
       (`rsw-elisp-eval-last-expression`) resolves this.
 
-  4.  **Default Expressions to Evaluate**: When using *M-:* bound
+  4.  **Default Expressions to Evaluate**: When using <kbd>M-:</kbd> bound
       to (`rsw-elisp-eval-expression`), if a region
       is active, the leading expression in the region is used as the
       default expression to evaluate and included in the prompt.
@@ -77,11 +77,11 @@ interactive Emacs Lisp evaluation:
       expression around point is used as the default.
 
   5.  **Editing Default Expressions**: If you ever want to edit the
-      default, use *M-y* (`rsw-elisp-yank-pop`) to yank it into the
+      default, use <kbd>M-y</kbd> (`rsw-elisp-yank-pop`) to yank it into the
       editable portion of the minibuffer, any time other than after a
-      `yank` command.  (*M-y* still performs its normal `yank-pop`
-      function after a *C-y* `yank` command).  If you yank in a large
-      expression by mistake, press *C-d* or *DELETE FORWARD* when
+      `yank` command.  (<kbd>M-y</kbd> still performs its normal `yank-pop`
+      function after a <kbd>C-y</kbd> `yank` command).  If you yank in a large
+      expression by mistake, press <kbd>C-d</kbd> or <kbd>DELETE FORWARD</kbd> when
       at the end of the minibuffer to erase its entire contents.  If
       you prefer these helper keys not be bound, after the call to:
 
